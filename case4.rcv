@@ -1,0 +1,157 @@
+#
+# $Header: case4.rcv 13-sep-2000.13:30:16 molagapp Exp $
+#
+# Copyright (c) 1995, 2000 Oracle Corporation.  All rights reserved.
+#
+#  NAME
+#    case4.rcv
+#
+#  DESCRIPTION
+#    Example of how to duplicate a database using Recovery Manager
+#
+#  NOTES
+#
+#  MODIFIED   (MM/DD/YY)
+#  banand      04/23/01 - rename case5 to case4
+#  molagapp    09/13/00 - fix for 8.2
+#  mjaeger     07/14/99 - bug 808870: OCCS: convert tabs, no long lines
+#  rlu         02/18/99 - fix typo
+#  fsanchez    11/06/98 - Creation
+#
+#
+#  The following script creates a duplicate database that you can use
+#  for testing purposes. This scenario assumes:
+#    - You wish to duplicate the target database to a new database
+#      named newdb.
+#    - The target database is mounted or open.
+#    - The auxiliary instance is started in NOMOUNT state.
+#    - The INIT.ORA file of the duplicate database must contain:
+#        - DB_NAME = newdb
+#        - CONTROL_FILES = ... (see script)
+#    - The INIT.ORA file of the duplicate database can also contain:
+#        - DB_FILE_NAME_CONVERT = ... (see script)
+#        - LOG_FILE_NAME_CONVERT = ... (see script)
+#        - Any other parameters required by the auxiliary database.
+#
+#  The following script creates a duplicate database using the most recent
+#  backup. After the DUPLICATE command has finished succesfully,
+#  you can register the duplicate database (if using a recovery catalog)
+#  and perform backups as with any other database.
+#
+#  Make sure to set your NLS_LANG and NLS_DATE_FORMAT environment variables.
+#  You can set these values to whatever you wish. The UNIX example
+#  below keeps the date format to the standard date format used
+#  for recovery:
+#
+#      %> setenv NLS_LANG AMERICAN
+#      %> setenv NLS_DATE_FORMAT 'YYYY-MM-DD:hh24:mi:ss'
+#
+#
+# Connect to RMAN and run the script by executing the following at
+# the O/S command line
+# (a single-line command is shown here on multiple lines for the
+# sake of clarity):
+# rman
+#  TARGET
+#    <target_userid</<target_password>@<target_net_service_name>
+#  CATALOG
+#    <catalog_userid>/<catalog_password>@<catalog_net_service_name>
+#  AUXILIARY
+#    <auxiliary_userid>/<auxiliary_password>@<auxiliary_net_service_name>
+#  @case4.rcv
+#  LOG case4.log
+#
+# For more information about the commands in this script, see the "Recovery
+# Manager Command Syntax" in the Oracle8i Backup and Recovery Guide.
+# For a description of the procedures for creating a duplicate database,
+# see the chapter "Creating a Duplicate Database."
+
+RUN
+{
+
+# The target database can be mounted with the following command
+# if not already opened or mounted:
+
+# STARTUP MOUNT ;
+
+# By default the DUPLICATE command will try to create the duplicate database
+# using the most recent backup of the target database. If you wish to
+# recover the duplicate database to a non-current time issue a SET UNTIL
+# command to speceify the time.
+
+# SET UNTIL TIME '1998-10-31:14:30:00';
+
+# There are several ways to convert the filenames for the duplicate
+# database. For a complete account, see the chapter "Creating a
+# Duplicate Database" in the Oracle8i Backup and Recovery Guide. Note
+# the following guidelines:
+
+# (1) If the duplicate database is in the same host as the target,
+#     and the target datafiles cannot be transformed with
+#     DB_FILE_NAME_CONVERT rule from the INIT.ORA file of the
+#     duplicate database, then issue a SET NEWNAME command for each
+#     datafile that cannot be converted automatically.
+#
+# (2) If you are connected to a recovery catalog database and have issued
+#     SET AUXNAME commands for some datafiles, the DUPLICATE command
+#     will use the AUXNAME value.  Disable the use of the AUXNAME
+#     with the command: SET AUXNAME FOR DATAFILE ... TO NULL;
+#
+# (3) When the duplicate database is in a different host from the
+#     target database, the same disk structure is present at the new
+#     host, and you want to keep the same datafile names, then use
+#     the NOFILENAMECHECK clause
+
+#   SET NEWNAME FOR DATAFILE 1 TO '?/dbs/newdb_datafile1.dbf';
+#   SET NEWNAME FOR DATAFILE 2 TO '?/dbs/newdb_datafile2.dbf';
+#   ...
+#   SET NEWNAME FOR DATAFILE 10 TO '?/dbs/newdb_datafile10.dbf';
+#   ...
+
+# You must allocate at least one auxiliary channel needs before issuing
+# the DUPLICATE command. The channel type (DISK or SBT) must match
+# the media where the backups of the target database are stored. If you
+# allocate TYPE DISK, then the more channels that are allocated, the
+# faster the duplicate process will be. For other types the number of
+# channels should be limited to the actual number of devices available
+# for the operation:
+
+    ALLOCATE AUXILIARY CHANNEL ch1 TYPE DISK;
+#   ALLOCATE AUXILIARY CHANNEL ch2 TYPE SBT;
+
+# newdb is the name of the auxiliary database as specified in the
+# INIT.ORA parameter DB_NAME:
+
+    DUPLICATE TARGET DATABASE TO newdb;
+
+# The LOGFILE clause is needed if the online logs cannot be
+# automatically generated from the target datafile names after
+# applying the LOG_FILE_NAME_CONVERT parameter of the
+# auxiliary database.
+# for example, for two groups each with two members of 512K bytes:
+
+#   LOGFILE
+#       GROUP 1 ('?/dbs/new_g1_l1.dbf',
+#                '?/dbs/new_g1_l2.dbf') SIZE 512K,
+#       GROUP 2 ('?/dbs/new_g2_l1.dbf',
+#                '?/dbs/new_g2_l2.dbf') SIZE 512K
+
+# If restoring to a host with the same structure as the target host, use the
+# NOFILENAMECHECK clause:
+
+#   NOFILENAMECHECK
+
+# Note that read-only datafiles are duplicated by default. If this is not
+# desired, use the SKIP READONLY clause:
+
+#   SKIP READONLY
+
+    ;
+
+# release the auxiliary channel
+
+    RELEASE CHANNEL ch1;
+#   RELEASE CHANNEL ch2;
+
+}
+

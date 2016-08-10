@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<!-- *************************************** -->
+<!-- **** AQXmlPublish - JMS Map Message**** -->
+<!-- **** Publish to multi consumer Queue*** -->
+<!-- **** With recipient                **** -->
+<!-- *************************************** -->
+
+<Envelope xmlns= "http://schemas.xmlsoap.org/soap/envelope/">
+      <Body>
+      
+        <AQXmlPublish xmlns = "http://ns.oracle.com/AQ/schemas/access">
+
+          <producer_options>
+            <destination>aqxmladmn.jms_map_q1</destination>
+          </producer_options>
+          
+          <message_set>
+            <message_count>1</message_count>	
+          
+            <message>
+              <message_number>1</message_number>
+          
+              <message_header>
+          	<correlation>CARS</correlation>
+          	<delay>0</delay>
+          	<sender_id >
+		  <agent_name>scott</agent_name>
+		  <address>home</address>
+		  <protocol>0</protocol>
+		</sender_id>
+          	<recipient_list>
+          	  <recipient>
+          	    <agent_name>RECP1</agent_name>
+          	    <protocol>0</protocol>
+          	  </recipient>
+          	</recipient_list>		
+              </message_header>
+          
+              <message_payload>	
+          
+          	<jms_map_message>	
+          	  <oracle_jms_properties>
+          	    <reply_to>
+		       <agent_name>oracle</agent_name>
+		       <address>redwoodshores</address>
+		       <protocol>100</protocol>
+		    </reply_to>
+          	    <userid>scott</userid>
+          	    <appid>AQProduct</appid>
+          	    <groupid>AQ</groupid>
+          	  </oracle_jms_properties>
+          
+          	  <user_properties>
+          	    <property>
+          	      <name>country</name>
+          	      <string_value>USA</string_value>
+          	    </property>
+          	    <property>
+          	      <name>State</name>
+          	      <string_value>california</string_value>
+          	    </property>
+          	  </user_properties>
+          
+          	  <map_data>
+          	    <item>
+          	      <name>make</name>
+          	      <string_value>Toyota</string_value>
+          	    </item>
+          	    <item>
+          	      <name>Color</name>
+          	      <string_value>Blue</string_value>
+          	    </item>
+          	    <item>
+          	      <name>Price</name>
+          	      <int_value>20000</int_value>
+          	    </item>
+          	  </map_data>
+          
+               </jms_map_message>
+             </message_payload>
+            </message>
+          </message_set>
+	</AQXmlPublish>  
+      </Body>
+</Envelope> 

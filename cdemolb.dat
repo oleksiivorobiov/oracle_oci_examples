@@ -1,0 +1,771 @@
+Photographic Lenses Tutorial
+
+By David Jacobson jacobson@hpl.hp.com
+
+Summary:
+     This posting contains a summary of optical facts for photographers. It is
+     more detailed that a FAQ file, but less so than a text book. It covers
+     focusing, apertures, bellows correction, depth of field, hyperfocal
+     distance, diffraction, the Modulation Transfer Function and illumination.
+
+Archive-name: rec-photo/lenses/tutorial
+Last-modified 1994/3/19
+Version: 1.3
+
+Lens Tutorial
+by David M. Jacobson
+jacobson@hpl.hp.com
+Revised March 19, 1995
+
+This note gives a tutorial on lenses and gives some common lens formulas. I
+attempted to make it between an FAQ (just simple facts) and a textbook. I
+generally give the starting point of an idea, and then skip to the results,
+leaving out all the algebra. If any part of it is too detailed, just skip ahead
+to the result and go on.
+
+It is in 6 parts. The first gives formulas relating subject and image distances
+and magnification, the second discusses f-stops, the third discusses depth of
+field, the fourth part discusses diffraction, the fifth part discusses the
+Modulation Transfer Function, and the sixth illumination. The sixth part is
+authored by John Bercovitz. Sometime in the future I will edit it to have all
+parts use consistent notation and format.
+
+The theory is simplified to that for lenses with the same medium (eg air) front
+and rear: the theory for underwater or oil immersion lenses is a bit more
+complicated.
+
+Subject distance, image distance, and magnification
+
+In lens formulas it is convenient to measure distances from a set of points
+called "principal points". There are two of them, one for the front of the lens
+and one for the rear, more properly called the primary principal point and the
+secondary principal point. While most lens formulas expect the subject distance
+to be measured from the front principal point, most focusing scales are
+calibrated to read the distance from the subject to the film plane. So you
+can't use the distance on your focusing scale in most calculations, unless you
+only need an approximate distance. Another interpretation of principal points
+is that a (probably virtual) object at the primary principal point formed by
+light entering from the front will appear from the rear to as a (probably
+virtual) image at the secondary principal point with magnification exactly one.
+
+"Nodal points" are the two points such that a light ray entering the front of
+the lens and headed straight toward the front nodal point will emerge going a
+straight way from the rear nodal point at exactly the same angle to the lens's
+axis as the entering ray had. The nodal points are equivalent to the principal
+points when the front and rear media are the same, eg air, so for practical
+purposes the terms can be used interchangeably. And again, the more proper
+terms are primary nodal point and secondary nodal point.
+
+In simple double convex lenses the two principal points are somewhere inside
+the lens (actually 1/n-th the way from the surface to the center, where n is
+the index of refraction), but in a complex lens they can be almost anywhere,
+including outside the lens, or with the rear principal point in front of the
+front principal point. In a lens with elements that are fixed relative to each
+other, the principal points are fixed relative to the glass. In zoom or
+internal focusing lenses the principal points may move relative to the glass
+and each other when zooming or focusing.
+
+When the lens is focused at infinity, the rear principal point is exactly one
+focal length in front of the film. To find the front principal point, take the
+lens off the camera and let light from a distant object pass through it
+"backwards". Find the point where the image is formed, and measure toward the
+lens one focal length. With some lenses, particularly ultra wides, you can't do
+this, since the image is not formed in front of the front element. (This all
+assumes that you know the focal length. I suppose you can trust the
+manufacturers numbers enough for educational purposes.)
+
+So
+     subject (object) to front principal point distance.
+Si
+     rear principal point to image distance
+f
+     focal length
+M
+     magnification
+
+1/So + 1/Si = 1/f
+M = Si/So
+(So-f)*(Si-f) = f^2
+M = f/(So-f) = (Si-f)/f
+
+If we interpret Si-f as the "extension" of the lens beyond infinity focus, then
+we see that it is inversely proportional to a similar "extension" of the
+subject.
+
+For rays close to and nearly parallel to the axis (these are called "paraxial"
+rays) we can approximately model most lenses with just two planes perpendicular
+to the optic axis and located at the principal points. "Nearly parallel" means
+that for the angles involved, theta ~= sin(theta) ~= tan(theta). ("~=" means
+approximately equal.) These planes are called principal planes.
+
+The light can be thought of as proceeding to the front principal plane, then
+jumping to a point in the rear principal plane exactly the same displacement
+from the axis and simultaneously being refracted (bent). The angle of
+refraction is proportional the distance from the center at which the ray
+strikes the plane and inversely proportional to the focal length of the lens.
+(The "front principal plane" is the one associated with the front of the lens.
+I could be behind the rear principal plane.)
+
+Apertures, f-stop, bellows correction factor, pupil magnification
+
+We define more symbols
+
+D
+     diameter of the entrance pupil, i.e. diameter of the aperture as seen from
+     the front of the lens
+N
+     f-number (or f-stop) D = f/N, as in f/5.6
+Ne
+     effective f-number (corrected for "bellows factor", but not absorption)
+
+Light from a subject point spreads out in a cone whose base is the entrance
+pupil. (The entrance pupil is the virtual image of the diaphragm formed by the
+lens elements in front of the diaphragm.) The fraction of the total light
+coming from the point that reaches the film is proportional to the solid angle
+subtended by the cone. If the entrance pupil is distance y in front of the
+front nodal point, this is approximately proportional to D^2/(So-y)^2. (Usually
+we can ignore y.) If the magnification is M, the light from a tiny subject
+patch of unit area gets spread out over an area M^2 on the film, and so the
+brightness on the film is inversely proportional to M^2. With some algebraic
+manipulation and assuming y=0 it can be shown that the relative brightness is
+
+(D/So)^2/M^2 = 1/(N^2 * (1+M)^2).
+
+Thus in the limit as So -> infinity and thus M -> 0, which is the usual case,
+the brightness on the film is inversely proportional to the square of the
+f-stop, N, and independent of the focal length.
+
+n For larger magnifications, M, the intensity on the film in is somewhat less
+then what is indicated by just 1/N^2, and the correction is called bellows
+factor. The short answer is that bellows factor when y=0 is just (1+M)^2. We
+will first consider the general case when y != 0.
+
+n Let us go back to the original formula for the relative brightness on the
+film.
+
+(D/(So-y))^2/M^2
+
+The distance, y, that the aperture is in front of the front nodal point,
+however, is not readily measurable. It is more convenient to use "pupil
+magnification". Analogous to the entrance pupil is the exit pupil, which is the
+virtual image of the diaphragm formed by any lens elements behind the
+diaphragm. The pupil magnification is the ratio of exit pupil diameter to the
+entrance pupil diameter.
+
+p
+     pupil magnification (exit_pupil_diameter/entrance_pupil_diameter)
+
+For all symmetrical lenses and most normal lenses the aperture appears the same
+from front and rear, so p~=1. Wide angle lenses frequently have p>1, while true
+telephoto lenses usually have p<1. It can be shown that y = f*(1-1/p), and
+substituting this into the above equation and carrying out some algebraic
+manipulation yields that the relative brightness on the film is proportional to
+
+1/(N^2 ( 1 + M/p)^2)
+
+Let us define Ne, the effective f-number, to be an f-number with the lens
+focused at infinity (M=0) that would give the same relative brightness on the
+film (ignoring light loss due to absorption and reflection) as the actual
+f-number N does with magnification M.
+
+Ne = N*(1+M/p)
+
+n An alternate, but less fundamental, explanation of bellows correction is just
+the inverse square law applied to the exit pupil to film distance. Ne is
+exit_pupil_to_film_distance/exit_pupil_diameter.
+
+It is convenient to think of the correction in terms of f-stops (powers of
+two). The correction in powers of two (stops) is 2*Log2(1+M/p) = 6.64386
+Log10(1+M/p). Note that for most normal lenses y=0 and thus p=1, so the M/p can
+be replaced by just M in the above equations.
+
+Circle of confusion, depth of field and hyperfocal distance.
+
+The light from a single subject point passing through the aperture is converged
+by the lens into a cone with its tip at the film (if the point is perfectly in
+focus) or slightly in front of or behind the film (if the subject point is
+somewhat out of focus). In the out of focus case the point is rendered as a
+circle where the film cuts the converging cone or the diverging cone on the
+other side of the image point. This circle is called the circle of confusion.
+The farther the tip of the cone, ie the image point, is away from the film, the
+larger the circle of confusion.
+
+Consider the situation of a "main subject" that is perfectly in focus, and an
+"alternate subject point" this is in front of or behind the subject.
+
+Soa
+     alternate subject point to front principal point distance
+Sia
+     rear principal point to alternate image point distance
+h
+     hyperfocal distance
+C
+     diameter of circle of confusion
+c
+     diameter of largest acceptable circle of confusion
+N
+     f-stop (focal length divided by diameter of entrance pupil)
+Ne
+     effective f-stop Ne = N * (1+M/p)
+D
+     the aperture (entrance pupil) diameter (D=f/N)
+M
+     magnification (M=f/(So-f))
+
+The diameter of the circle of confusion can be computed by similar triangles,
+and then solved in terms of the lens parameters and subject distances. For a
+while let us assume unity pupil magnification, i.e. p=1.
+
+When So is finite
+C = D*(Sia-Si)/Sia = f^2*(So/Soa-1)/(N*(So-f))
+When So = Infinity,
+C = f^2/(N Soa)
+
+Note that in this formula C is positive when the alternate image point is
+behind the film (i.e. the alternate subject point is in front of the main
+subject) and negative in the opposite case. In reality, the circle of confusion
+is always positive and has a diameter equal to Abs(C).
+
+If the circle of confusion is small enough, given the magnification in printing
+or projection, the optical quality throughout the system, etc., the image will
+appear to be sharp. Although there is no one diameter that marks the boundary
+between fuzzy and clear, .03 mm is generally used in 35mm work as the diameter
+of the acceptable circle of confusion. (I arrived at this by observing the
+depth of field scales or charts on/with a number of lenses from Nikon, Pentax,
+Sigma, and Zeiss. All but the Zeiss lens came out around .03mm. The Zeiss lens
+appeared to be based on .025 mm.) Call this diameter c.
+
+If the lens is focused at infinity (so the rear principal point to film
+distance equals the focal length), the distance to closest point that will be
+acceptably rendered is called the hyperfocal distance.
+
+h = f^2/(N*c)
+
+If the main subject is at a finite distance, the closest alternative point that
+is acceptably rendered is at at distance
+
+Sclose = h So/(h + (So-F))
+
+and the farthest alternative point that is acceptably rendered is at distance
+
+Sfar = h So/(h - (So - F))
+
+except that if the denominator is zero or negative, Sfar = infinity.
+
+We call Sfar-So the rear depth of field and So-Sclose the front depth field.
+
+A form that is exact, even when P != 1, is
+
+depth of field =
+     =c Ne / (M^2 * (1 +or- (So-f)/h1))
+     = c N (1+M/p) / (M^2 * (1 +or- (N c)/(f M))
+
+where h1 = f^2/(N c), ie the hyperfocal distance given c, N, and f and assuming
+P=1. Use + for front depth of field and - for rear depth of field. If the
+denominator goes zero or negative, the rear depth of field is infinity.
+
+This is a very nice equation. It shows that for distances short with respect to
+the hyperfocal distance, the depth of field is very close to just c*Ne/M^2. As
+the distance increases, the rear depth of field gets larger than the front
+depth of field. The rear depth of field is twice the front depth of field when
+So-f is one third the hyperfocal distance. And when So-f = h1, the rear depth
+of field extends to infinity.
+
+If we frame a subject the same way with two different lenses, i.e. M is the
+same both both situations, the shorter focal length lens will have less front
+depth of field and more rear depth of field at the same effective f-stop. (To a
+first approximation, the depth of field is the same in both cases.)
+
+Another important consideration when choosing a lens focal length is how a
+distant background point will be rendered. Points at infinity are rendered as
+circles of size
+
+C = f M / N
+
+So at constant subject magnification a distant background point will be blurred
+in direct proportion to the focal length.
+
+This is illustrated by the following example, in which lenses of 50mm and 100
+mm focal lengths are both set up to get a magnification of 1/10. Both lenses
+are set to f/8. The graph shows the circle of confusions for points as a
+function of the distance behind the subject.
+
+circle of confusion (mm)
+     #
+     #               *** 100mm f/8
+     #               ... 50mm f/8
+ 0.8 #                                                               *******
+     #                                                      *********
+     #                                             *********
+     #                                         ****
+     #                                    *****
+     #                                ****
+ 0.6 #                            ****
+     #                       *****                                   .......
+     #                    ***                      ..................
+     #                  **            .............
+ 0.4 #              ****     .........
+     #           ***     ....
+     #         **   .....
+     #        * ....
+     #      **..
+ 0.2 #    **.
+     #  .*.
+     # **
+     #*
+     *######################################################################
+   0 #
+             250    500       750     1000     1250    1500     1750     2000
+                   distance behind subject (mm)
+
+The standard .03mm circle of confusion criterion is clear down in the ascii
+fuzz. The slope of both graphs is the same near the origin, showing that to a
+first approximation both lenses have the same depth of field. However, the
+limiting size of the circle of confusion as the distance behind the subject
+goes to infinity is twice as large for the 100mm lens as for the 50mm lens.
+
+Diffraction
+
+When a beam of parallel light passes through a circular aperture it spreads out
+a little, a phenomenon known as diffraction. The smaller the aperture, the more
+the spreading. The field strength (of the electric or magnetic field) at angle
+phi from the axis is proportional to
+
+lambda/(phi Pi R) * BesselJ1(2 phi Pi R/lambda),
+
+where R is the radius of the aperture, lambda is the wavelength of the light,
+and BesselJ1 is the first order Bessel function. The power (intensity) is
+proportional to the square of this.
+
+n The field strength function forms a bell-shaped curve, but unlike the classic
+E^(-x^2) one, it eventually oscillates about zero. Its first zero at 1.21967
+lambda/(2 R). There are actually an infinite number of lobes after this, but
+about 86% of the power is in the circle bounded by the first zero.
+
+    Relative field strength
+
+     ***
+   1 #  ****
+     #      **
+ 0.8 #        *
+     #         **
+     #           *
+     #            **
+     #              *
+ 0.6 #               *
+     #                *
+     #                 *
+ 0.4 #                  *
+     #                   *
+     #                    **
+ 0.2 #                      **
+     #                        **
+     #                          **                         *****************
+   ###############################*###################*****###################
+     #                             *****        ******
+     #          0.5         1          1.5******    2         2.5          3
+
+
+        Angle from axis (relative to lambda/diameter_of_aperture)
+
+Approximating the diaphragm to film distance as f and making use of the fact
+that the aperture has diameter f/N, it follows directly that the diameter of
+the first zero of the diffraction pattern is 2.43934*N*lambda. Applying this in
+a normal photographic situation is difficult, since the light contains a whole
+spectrum of colors. We really need to integrate over the visible spectrum. The
+eye has maximum sensitive around 555 nm, in the yellow green. If, for
+simplicity, we take 555 nm as the wavelength, the diameter of the first zero,
+in mm, comes out to be 0.00135383 N.
+
+As was mentioned above, the normally accepted circle of confusion for depth of
+field is .03 mm, but .03/0.00135383 = 22.1594, so we can see that at f/22 the
+diameter of the first zero of the diffraction pattern is as large is the
+acceptable circle of confusion.
+
+A common way of rating the resolution of a lens is in line pairs per mm. It is
+hard to say when lines are resolvable, but suppose that we use a criterion that
+the center of the dark area receive no more than 80% of the light power
+striking the center of the lightest areas. Then the resolution is 0.823
+/(lambda*N) lpmm. If we again assume 555 nm, this comes out to 1482/N lpmm,
+which is in close agreement with the widely used rule of thumb that the
+resolution is diffraction limited to 1500/N lpmm. However, note that the MTF,
+discussed below, provides another view of this subject.
+
+Modulation Transfer Function
+
+The modulation transfer function is a measure of the extent to which a lens,
+film, etc., can reproduce detail in an image. It is the spatial analog of
+frequency response in an electrical system. The exact definition of the
+modulation transfer function and the related optical transfer function varies
+slightly amongst different authorities.
+
+The 2-dimensional Fourier transform of the point spread function is known as
+the optical transfer function (OTF). The value of this function along any
+radius is the fourier transform of the line spread function in the same
+direction. The modulation transfer function is the absolute value of the
+fourier transform of the line spread function.
+
+Equivalently, the modulation transfer function of a lens is the ratio of
+relative image contrast divided by relative subject contrast of a subject with
+sinusoidally varying brightness as a function of spatial frequency (e.g. cycles
+per mm). Relative contrast is defined as (Imax-Imin)/(Imax+Imin). MTF can also
+be used for film, but since film has a non-linear characteristic curve, the
+density is first transformed back to the equivalent intensity by applying the
+inverse of the characteristic curve.
+
+For a lens the MTF can vary with almost every conceivable parameter, including
+f-stop, subject distance, distance of the point from the center, direction of
+modulation, and spectral distribution of the light. The two standard directions
+are radial (also known as saggital) and tangential.
+
+The MTF for an an ideal diffraction-free lens is a constant 1 from 0 to
+infinity at every point and direction. For a practical lens it starts out near
+1, and falls off with increasing spatial frequency, with the falloff being
+worse at the edges than at the center. Flare would make the MTF of a lens be
+less than one even at zero spatial frequency. Adjacency effects in film can
+make the MTF of film be greater than 1 in certain frequency ranges.
+
+An advantage of the MTF as a measure of performance is that under some
+circumstances the MTF of the system is the product (frequency by frequency) of
+the (properly scaled) MTFs of its components. Such multiplication is always
+allowed when each step accepts as input solely the intensity of the output of
+the previous state, or some function of that intensity. Thus it is legitimate
+to multiply lens and film MTFs or the MTFs of a two lens system with a diffuser
+in the middle. However, the MTFs of cascaded ordinary lenses can legitimately
+be multiplied only when a set of quite restrictive and technical conditions is
+satisfied.
+
+As an example of some OTF/MTF functions, below are the OTFs of pure diffraction
+for an f/22 aperture, and the OTF induced by a .03mm circle of confusion of a
+de-focused but otherwise perfect and diffraction free lens. (Note that these
+cannot be multiplied.)
+
+Let lambda be the wavelength of the light, and spf the spatial frequency in
+cycles per mm.
+
+For diffraction the formulas is
+
+OTF(lambda,N,spf) =
+     = ArcCos(lambda*N*spf) -lambda*N*spf*Sqrt(1-(lambda*N*spf)^2),
+          if lambda*N*spf <=1
+     = 0,
+          if lambda*N*spf >=1
+
+Note that for lambda = 555 nm, the OTF is zero at spatial frequencies of 1801/N
+cycles per mm and beyond.
+
+For a circle of confusion of diameter C,
+
+OTF(C,spf) = 2 * BesselJ1(Pi C spf)/(Pi C spf)
+
+This goes negative at certain frequencies. Physically, this would mean that if
+the test pattern were lighter right on the optical center then nearby, the
+image would be darker right on the optical center than nearby. The MTF is the
+absolute value of this function. Some authorities use the term "spurious
+resolution" for spatial frequencies beyond the first zero.
+
+Here is a graph of the OTF of both a .03mm circle of confusion and an f/22
+diffraction limit.
+
+  OTF
+
+     #
+   1 ***
+     #..**
+     #  ..**
+     #    ..*             ***   .03 mm circle of confusion
+ 0.8 #      .*            ...   555nm f/22 diffraction
+     #        *.
+     #         *..
+     #          * ..
+ 0.6 #           *  .
+     #            *  .
+     #             *  ..
+     #              *   ...
+ 0.4 #               *     ..
+     #               *       ..
+     #                *        ..
+     #                *          ...
+ 0.2 #                 *            ...
+     #                  *              ...
+     #                   *                ...
+     #                    **                 ..      **********
+   #########################*##################.*****..........*****........##
+     #                       **              ***                    ********
+     #          20         40  ***     60****      80         100         120
+     #                           ********
+     #
+                           spatial frequency (cycles/mm)
+
+Although this graph is linear in both axes, the typical MTF is presented in a
+log-log plot.
+
+Illumination
+
+(by John Bercovitz)
+
+The Photometric System
+
+Light flux, for the purposes of illumination engineering, is measured in
+lumens. A lumen of light, no matter what its wavelength (color), appears
+equally bright to the human eye. The human eye has a stronger response to some
+wavelengths of light than to other wavelengths. The strongest response for the
+light-adapted eye (when scene luminance > .001 Lambert) comes at a wavelength
+of 555 nm. A light-adapted eye is said to be operating in the photopic region.
+A dark-adapted eye is operating in the scotopic region (scene luminance </=
+10^-8 Lambert). In between is the mesopic region. The peak response of the eye
+shifts from 555 nm to 510 nm as scene luminance is decreased from the photopic
+region to the scotopic region. The standard lumen is approximately 1/680 of a
+watt of radiant energy at 555 nm. Standard values for other wavelengths are
+based on the photopic response curve and are given with two-place accuracy by
+the table below. The values are correct no matter what region you're operating
+in - they're based only on the photopic region. If you're operating in a
+different region, there are corrections to apply to obtain the eye's relative
+response, but this doesn't change the standard values given below.
+
+Wavelength, nm   Lumens/watt         Wavelength, nm  Lumens/watt
+      400           0.27                600              430
+      450          26                   650               73
+      500         220                   700                2.8
+      550         680
+
+Following are the standard units used in photometry with their definitions and
+symbols.
+
+Luminous flux, F,
+     is measured in lumens.
+Quantity of light, Q,
+     is measured in lumen-hours or lumen-seconds. It is the time integral of
+     luminous flux.
+Luminous Intensity, I,
+     is measured in candles, candlepower, or candela (all the same thing). It
+     is a measure of how much flux is flowing through a solid angle. A lumen
+     per steradian is a candle. There are 4 pi steradians to a complete solid
+     angle. A unit area at unit distance from a point source covers a
+     steradian. This follows from the fact that the surface area of a sphere is
+     4 pi r^2.
+Lamps are measured in MSCP,
+     mean spherical candlepower. If you multiply MSCP by 4 pi, you have the
+     lumen output of the lamp. In the case of an ordinary lamp which has a
+     horizontal filament when it is burning base down, roughly 3 steradians are
+     ineffectual: one is wiped out by inter- ference from the base and two more
+     are very low intensity since not much light comes off either end of the
+     filament. So figure the MSCP should be multiplied by 4/3 to get the
+     candles coming off perpendicular to the lamp filament. Incidentally, the
+     number of lumens coming from an incandescent lamp varies approximately as
+     the 3.6 power of the voltage. This can be really important if you are
+     using a lamp of known candlepower to calibrate a photometer.
+Illumination (illuminance), E,
+     is the _areal density_ of incident luminous flux: how many lumens per unit
+     area. A lumen per square foot is a foot-candle; a one square foot area on
+     the surface of a sphere of radius one foot and having a one candle point
+     source centered in it would therefore have an illumination of one
+     foot-candle due to the one lumen falling on it. If you substitute meter
+     for foot you have a meter-candle or lux. In this case you still have the
+     flux of one steradian but now it's spread out over one square meter.
+     Multiply an illumination level in lux by .0929 to convert it to
+     foot-candles. (foot/meter)^2= .0929. A centimeter candle is a phot.
+     Illumination from a point source falls off as the square of the distance.
+     So if you divide the intensity of a point source in candles by the
+     distance from it in feet squared, you have the illumination in foot
+     candles at that distance.
+Luminance, B,
+     is the _areal intensity_ of an extended diffuse source or an extended
+     diffuse reflector. If a perfectly diffuse, perfectly reflecting surface
+     has one foot-candle (one lumen per square foot) of illumination falling on
+     it, its luminance is one foot-Lambert or 1/pi candles per square foot. The
+     total amount of flux coming off this perfectly diffuse, perfectly
+     reflecting surface is, of course, one lumen per square foot. Looking at it
+     another way, if you have a one square foot diffuse source that has a
+     luminance of one candle per square foot (pi times as much intensity as in
+     the previous example), then the total output of this source is pi lumens.
+     If you travel out a good distance along the normal to the center of this
+     one square foot surface, it will look like a point source with an
+     intensity of one candle.
+To contrast:
+     Intensity in candles is for a point source while luminance in candles per
+     square foot is for an extended source - luminance is intensity per unit
+     area. If it's a perfectly diffuse but not perfectly reflecting surface,
+     you have to multiply by the reflectance, k, to find the luminance.
+Also to contrast:
+     Illumination, E, is for the incident or incoming flux's areal _density_;
+     luminance, B, is for reflected or outgoing flux's areal _intensity_.
+     Lambert's law says that an perfectly diffuse surface or extended source
+     reflects or emits light according to a cosine law: the amount of flux
+     emitted per unit surface area is proportional to the cosine of the angle
+     between the direction in which the flux is being emitted and the normal to
+     the emitting surface. (Note however, that there is no fundamental physics
+     behind Lambert's "law". While assumiming it to be true simplifies the
+     theory, it is really only an empirical observation whose accuracy varies
+     from surface to surface. Lambert's law can be taken as a definition of a
+     perfectly diffuse surface.)
+     A consequence of Lambert's law is that no matter from what direction you
+     look at a perfectly diffuse surface, the luminance on the basis of
+     _projected_ area is the same. So if you have a light meter looking at a
+     perfectly diffuse surface, it doesn't matter what the angle between the
+     axis of the light meter and the normal to the surface is as long as all
+     the light meter can see is the surface: in any case the reading will be
+     the same.
+
+There are a number of luminance units, but they are in categories: two of the
+categories are those using English units and those using metric units. Another
+two categories are those which have the constant 1/pi built into them and those
+that do not. The latter stems from the fact that the formula to calculate
+luminance (photometric Brightness), B, from illumination (illuminance), E,
+contains the factor 1/pi. To illustrate:
+
+B = (k*E)(1/pi)
+Bfl = k*E
+
+where:
+B = luminance, candles/foot^2
+Bfl = luminance, foot-Lamberts
+k = reflectivity 0<k<1
+E = illuminance in foot-candles (lumens/ foot^2)
+
+Obviously, if you divide a luminance expressed in foot-Lamberts by pi you then
+have the luminance expressed in candles /foot^2. (Bfl/pi=B)
+
+Other luminance units are:
+
+     stilb = 1 candle/square centimeter      sb
+     apostilb = stilb/(pi X 10^4)=10^-4 L    asb
+     nit = 1 candle/ square meter            nt
+     Lambert = (1/pi) candle/square cm       L
+
+Below is a table of photometric units with short definitions.
+
+Symbol      Term                 Unit              Unit Definition
+
+  Q      light quantity       lumen-hour          radiant energy
+                              lumen-second        as corrected for
+                                                  eye's spectral response
+
+  F      luminous flux        lumen               radiant energy flux
+                                                  as corrected for
+                                                  eye's spectral response
+
+  I      luminous intensity   candle              one lumen per steradian
+                              candela             one lumen per steradian
+                              candlepower         one lumen per steradian
+
+  E      illumination         foot-candle         lumen/foot^2
+                              lux                 lumen/meter^2
+                              phot                lumen/centimeter^2
+
+  B      luminance            candle/foot^2       see unit def's. above
+                              foot-Lambert   =    (1/pi) candles/foot^2
+                              Lambert        =    (1/pi) candles/centimeter^2
+                              stilb          =    1 candle/centimeter^2
+                              nit            =    1 candle/meter^2
+
+Note: A lumen-second is sometimes known as a Talbot.
+
+To review:
+
+Quantity of light, Q, is akin to a quantity of photons except that here the
+number of photons is pro-rated according to how bright they appear to the eye.
+Luminous flux, F, is akin to the time rate of flow of photons except that the
+photons are pro-rated according to how bright they appear to the eye.
+Luminous intensity, I, is the solid-angular density of luminous flux. Applies
+primarily to point sources.
+Illumination, E, is the areal density of incident luminous flux.
+Luminance, B, is the areal intensity of an extended source.
+
+Photometry with a Photographic Light Meter
+
+The first caveat to keep in mind is that the average unfiltered light meter
+doesn't have the same spectral sensitivity curve that the human eye does. Each
+type of sensor used has its own curve. Silicon blue cells aren't too bad. The
+overall sensitivity of a cell is usually measured with a 2856K or 2870K
+incandescent lamp. Less commonly it is measured with 6000K sunlight.
+
+The basis of using a light meter is the fact that a light meter uses the
+Additive Photographic Exposure System, the system which uses Exposure Values:
+
+Ev = Av + Tv = Sv + Bv
+
+where:
+Ev = Exposure Value
+Av = Aperture Value = lg2 N^2, where N = f-number
+Tv = Time Value = lg2 (1/t), where t = time in sec.s
+Sv = Speed Value = lg2 (0.3 S), where S = ASA speed
+Bv = Brightness Value = lg2 Bfl
+
+lg2 is logarithm base 2
+
+from which, for example:
+Av(N=f/1) = 0
+Tv(t=1 sec) = 0
+Sv(S=ASA 3.125) E
+Bv( Bfl = 1 foot-Lambert) = 0
+
+and therefore:
+Bfl = 2^Bv
+Ev (Sv = 0) = Bv
+
+From the preceeding two equations you can see that if you set the meter dial to
+an ASA speed of approximately 3.1 (same as Sv = 0), when you read a scene
+luminance level the Ev reading will be Bv from which you can calculate Bfl. If
+you don't have an ASA setting of 3.1 on your dial, just use ASA 100 and
+subtract 5 from the Ev reading to get Bv. (Sv@ASA100=5)
+
+Image Illumination
+
+If you know the object luminance (photometric brightness), the f-number of the
+lens, and the image magnification, you can calculate the image illumination.
+The image magnification is the quotient of any linear dimension in the image
+divided by the corresponding linear dimension on the object. It is, in the
+usual photographic case, a number less than one. The f-number is the f-number
+for the lens when focussed at infinity - this is what's written on the lens.
+The formula that relates these quantities is given below:
+
+Eimage = (t pi B)/[4 N^2 (1+m)^2]
+
+or:
+Eimage = (t Bfl)/[4 N^2 (1+m)^2]
+
+where:
+
+Eimage
+     is in foot-candles (divide by .0929 to get lux)
+t
+     is the transmittance of the lens (usually .9 to .95 but lower for more
+     surfaces in the lens or lack of anti-reflection coatings)
+B
+     is the object luminance in candles/square foot
+Bfl
+     is the object luminance in foot-Lamberts
+N
+     is the f-number of the lens
+m
+     is the image magnification
+
+References:
+
+G.E. Miniature Lamp Catalog
+Gilway Technical Lamp Catalog
+"Lenses in Photography" Rudolph Kingslake Rev.Ed.c1963 A.S.Barnes
+"Applied Optics & Optical Engr." Ed. by Kingslake c1965 Academic Press
+"The Lighting Primer" Bernard Boylan c1987 Iowa State Univ.
+"University Physics" Sears & Zemansky c1955 Addison-Wesley
+
+Acknowledgements
+
+Thanks to John Bercovitz for providing the material on photometry and
+illumination. Thanks to Andy Young for pointing out that Lambert's law is only
+empirical. Thanks to John Bercovitz, donl, and Bill Tyler for reviewing an
+earlier version of this file. I've made extensive changes since their review,
+so any remaining bugs are mine, not a result of their oversight. All of them
+told me it was too detailed. I probably should have listened.
+
+Copyright (C) 1993, 1994, 1995 David M. Jacobson
+
+Rec.photo.* readers are granted permission to make a reasonable number
+electronic or paper copies for their themselves, their friends and colleagues.
+Other publication, or commercial or for-profit use is prohibited.
+    ------------------------------------------------------------------------
+
+Translated to HTML by
+Bengt Hallinger <behal@math.liu.se>
+Last modified: Mon Mar 27 18:10:03 1995

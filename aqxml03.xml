@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!-- ******************************************************* -->
+<!-- **** aqxml03.xml - AQXmlPublish                    **** -->
+<!-- **** Enqueue 2 messages to ADT multi consumer queue**** -->
+<!-- ******************************************************* -->
+
+<Envelope xmlns= "http://schemas.xmlsoap.org/soap/envelope/">
+      <Body>
+        <AQXmlPublish xmlns = "http://ns.oracle.com/AQ/schemas/access">
+          <producer_options>
+            <destination>aqxmladmn.cars_q1</destination>
+          </producer_options>
+          
+          <message_set>
+            <message_count>2</message_count>	
+          
+            <message>
+              <message_number>1</message_number>
+          
+              <message_header>
+          	<correlation>CARS</correlation>
+          	<delay>0</delay>
+          	<sender_id>
+          	   <agent_name>AGENT01</agent_name>
+          	   <protocol>0</protocol>
+          	</sender_id> 
+              </message_header>
+          
+              <message_payload>	
+                <CARS_TYP>
+                  <CARNO>4MEG123</CARNO>
+                  <YEAR>2001</YEAR>
+                  <MODEL>BMW</MODEL>
+                  <COLOR>RED</COLOR>
+                  <CAR_DETAILS>Red on Sale -20</CAR_DETAILS>
+                  <PRICE>35000</PRICE>
+               </CARS_TYP>
+              </message_payload>
+            </message>
+ 
+            <message>
+              <message_number>2</message_number>
+          
+              <message_header>
+          	<correlation>CARS</correlation>
+          	<delay>0</delay>
+          	<sender_id>
+          	   <agent_name>AGENT02</agent_name>
+          	   <protocol>0</protocol>
+          	</sender_id> 
+              </message_header>
+          
+              <message_payload>	
+                <CARS_TYP>
+                  <CARNO>4PCE123</CARNO>
+                  <YEAR>2000</YEAR>
+                  <MODEL>LEXUS</MODEL>
+                  <COLOR>BLUE</COLOR>
+                  <CAR_DETAILS>In Stock -50</CAR_DETAILS>
+                  <PRICE>55000</PRICE>
+               </CARS_TYP>
+              </message_payload>
+            </message>
+          </message_set>
+        </AQXmlPublish>  
+      </Body>
+</Envelope> 

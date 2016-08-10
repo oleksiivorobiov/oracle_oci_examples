@@ -1,0 +1,260 @@
+#
+# $Header: case1.rcv 11-apr-2001.15:20:02 banand Exp $
+#
+# Copyright (c) 1995, 2000 Oracle Corporation.  All rights reserved.
+#
+#  NAME
+#    case1.rcv
+#
+#  DESCRIPTION
+#    This case study can be used as the basis for developing your own backup, 
+#    maintenance, restore, and recovery scripts for a single instance database
+#    running in no-archivelog mode.
+#    
+#  NOTES
+#    You should not run all of the commands in this file in a single RMAN
+#    session.  Rather, the various sections in this file should be separated
+#    into individual RMAN scripts which can be run to configure, backup,
+#    restore, and recover the database.
+#
+#  MODIFIED   (MM/DD/YY)
+#  banand      04/11/01 - re-write this case for no-archivelog mode database
+#  banand      04/11/01 - Creation
+#
+#  Organization:
+#    This case study is divided into the following sections:
+#      1. Configuring RMAN parameters
+#      2. Backup
+#          - start script for backup cycle 
+#            (full level 0 consistent backups)
+#          - script for other days of backup cycle
+#            (differential incremental level 1 consistent backups)
+#          - taking backups of read-only tablespace
+#      3. Restore validation
+#          - command to verify database is restorable.
+#      4. Recovery Catalog maintenance
+#      5. Restore and Recovery
+#
+#  How to run a file containing RMAN commands:
+#
+#    Here is an example of how to run a file that contains RMAN commands:
+#    rman target internal/pwd@prod1 catalog rman/rman@rcat cmdfile command.rcv
+#
+#    See the Recovery Manager Users Guide for more options on how to connect.
+#
+
+# Section 1 - CONFIGURATION
+#-----------------------------------------------------------------------------
+
+# There are various parameters that can be used to configure RMAN operations
+# to suit your needs.  Some of the things that you can configure are:
+#    - the required number of backups of each datafile
+#    - the number of server processes that will do backup/restore operations
+#      in parallel
+#    - the directory where on-disk backups will be stored
+#
+# This case study assumes that you want:
+#    - 5 backups of each datafile
+#    - backups to be stored on disk in the /backup directory
+#    - 2 server processes to do backup/restore operations in parallel
+#    - no backups for tablespace tbl_exclude, because it is easy to recreate
+#
+# It should be noted that configuration settings are stored persistently, and
+# will be used by RMAN for all subsequent backup, restore, recovery, and
+# maintenance operations.
+
+# Configure backups to be written to disk.
+CONFIGURE DEFAULT DEVICE TYPE TO DISK;
+
+# Configure RMAN to keep at least 5 backups of each datafile.
+# If you have certain backups which must be retained longer than this
+# retention policy, you can use the KEEP option with the BACKUP command when
+# creating those backups.
+CONFIGURE RETENTION POLICY TO REDUNDANCY 5;
+
+# Configure RMAN to use two disk channels for backup, restore, recovery, and
+# maintenance operations.
+CONFIGURE DEVICE TYPE DISK PARALLELISM 2;
+
+# Configure RMAN to write disk backups to the /backup directory.
+# The format specifier %t is replaced with a 4-byte timestamp, %s with the
+# backup set number, and %p with the backup piece number.
+CONFIGURE CHANNEL DEVICE TYPE DISK FORMAT '/backup/ora_df%t_s%s_s%p';
+
+# Configure RMAN to back up the control file after each backup.
+CONFIGURE CONTROLFILE AUTOBACKUP ON;
+
+# Configure RMAN to write controlfile autobackups to the /backup directory.
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/backup/ora_cf%F';
+
+# Excludes tbs_exclude from full database backups.  NOEXCLUDE can be specified
+# with the BACKUP command to override this configuration.
+CONFIGURE EXCLUDE FOR TABLESPACE tbl_exclude;
+
+# NOTES:
+#    - If you want backups to go to tape, refer to the configuration
+#      section in case2.rcv on how to configure tape backups.
+#      However in case of disaster recover if RMAN is not connected to 
+#      recovery catalog, you will have to manually allocate all channels where
+#      backups were taken.
+#
+#    - Use the SHOW ALL command to see your current configuration settings.
+#
+#    - Save the database id displayed in the RMAN output if you are taking
+#      RMAN backups in nocatalog mode or database name is ambigious in recovery
+#      catalog. The database id is required during disaster recovery (See
+#      Section 5). You will see the database id in RMAN output on connecting
+#      to target database like :
+#
+#      connected to target database: INVENTORY (DBID=1670954628)
+
+# Section 2 - BACKUP
+# -----------------------------------------------------------------------------
+# Since you are operating the database in no-archivelog mode, only the
+# following kinds of backups are allowed:
+#   - whole database backups when the database is cleanly closed and the
+#     instance is mounted
+#   - tablespace backups of tablespaces that are offline clean or read only
+
+# The following scenario assumes that you want to take one full database
+# backup every week, and one incremental database backup every day.  The
+# backup cycle starts on Friday.  A full backup is taken on Friday, and an
+# incremental backup is taken every other day.  The retention policy of
+# REDUNDANCY 5 applies only to full (not incremental) backups, so the
+# combination of that policy and this backup schedule ensures that you can
+# restore to any incremental backup time for the last 5 weeks.
+
+# Section 2.1 - Start script for backup cycle
+# ------------------------------------------------------
+# The following commands are run each Friday to start the backup cycle.
+# The steps are:
+#  - Re-start the database to perform crash recovery, in case the database is
+#    not currently open, and was not shut down consistently.  The database is
+#    started in DBA mode so that normal users cannot connect.
+#  - Shut down with the IMMEDIATE option to close the database consistently.
+#  - Startup and mount the database.
+#  - Backup database with incremental level 0.
+#  - Open database for normal operation.
+
+STARTUP FORCE DBA;
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+BACKUP INCREMENTAL LEVEL 0 DATABASE FILESPERSET 4;
+ALTER DATABASE OPEN;
+
+
+# If the above backup fails for any reaon, you can use the NOT BACKED UP SINCE
+# option on the BACKUP command (9i restartable backup feature) to continue
+# from the point of failure.  The small value of FILESPERSET is good for
+# restartable backups.  However you should note that smaller FILESPERSET
+# produces more backup sets.
+
+# To re-start from the point of failure, run following commands
+BACKUP INCREMENTAL LEVEL 0 DATABASE FILESPERSET 4 
+   NOT BACKED UP SINCE TIME 'SYSDATE-1';
+ALTER DATABASE OPEN;
+
+
+# Section 2.2 - script for other days of the backup cycle
+# -------------------------------------------------------------
+# The following commands can be run from Saturday through Thursday to take
+# cumulative incremental backups. They are same as in section 2.1, except
+# that LEVEL 1 is specified on BACKUP command.
+# The steps are the same as in section 2.1, except that the options
+# LEVEL 1 CUMULATIVE indicate that only the blocks that have changed
+# since the last level 0 backup will be backed up.  If the CUMULATIVE
+# option was not specified, then only the blocks that have changed since
+# the last level 1 backup will be backed up.  The advantage of a cumulative
+# backup is that only one incremental backup ever needs to be applied
+# during recovery.
+
+STARTUP FORCE DBA;
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+BACKUP INCREMENTAL LEVEL 1 CUMULATIVE DATABASE FILESPERSET 4;
+ALTER DATABASE OPEN;
+
+
+# Section 2.3 - Taking backups of readonly tablespaces
+# ----------------------------------------------------
+# The database does not have to be closed to back up a readonly tablespace.
+# The following command can be used to backup a readonly tablespace.
+
+BACKUP TABLESPACE read_only_tablespace_name;
+
+# Section 3 - RESTORE VALIDATION
+#-----------------------------------------------------------------------------
+# The following commands can be run any time to check if RMAN is capable of 
+# restoring database/tablespace using existing backups.
+
+RESTORE DATABASE VALIDATE;                             # checks if database 
+                                                       # can be restored
+RESTORE TABLESPACE read_only_tablespace_name VALIDATE; # check if tablespace
+                                                       # is restorable
+
+# Section 4 - MAINTENANCE COMMANDS
+#-----------------------------------------------------------------------------
+# Basic steps for maintenance are:
+
+#  - Verify all backups on backup media are intact
+CROSSCHECK BACKUP OF DATABASE;
+
+#  - Display a list of files that need to be backed up based on the retention
+#    policy.  For this case study, files that don't have at least 5 backups
+#    will be reported.
+REPORT NEED BACKUP;
+
+#  - delete un-necessary backups. This command deletes backups based on the
+#    retention policy.  For this case study, all backups older than the 5 most
+#    recent backups of each datafile will be deleted.
+DELETE OBSOLETE;
+
+#  - get complete list of existing backups
+LIST BACKUP SUMMARY;
+
+
+# Section 5 - RESTORE AND RECOVERY
+#-----------------------------------------------------------------------------
+# In case of any user error or media failure you would have to do complete
+# database recovery.  However using the SET UNTIL command, it is possible to
+# recover to different points in time when incrementals were taken.  Because
+# redo logs are not archived, only full and incremental backups are available
+# for restore and recovery.
+# 
+
+# It is assumed that you have all the configuration files like the server
+# parameter file (spfile - equivalent of init.ora in 9i), tnsnames.ora, and
+# listener.ora in the appropriate places, and that you can startup the Oracle
+# instance in nomount mode and connect from RMAN to the target instance.
+
+#
+# The steps are:
+#  - If not using a recovery catalog, or if the database name is ambiguous in,
+#    the recovery catalog you need to start RMAN without TARGET option and
+#    set the dbid before restoring the controlfile from autobackup.
+#  - Startup database in nomount mode (you should have restored initialization
+#    files for database, and listener files (only if connecting over SQLNET)).
+#  - restore controlfile.
+#  - restore all database files. Use CHECK READONLY, to make sure all read-only
+#    files are correct. If not RMAN will restore them.
+#  - apply all incrementals.
+#  - open database with resetlogs mode to re-create online logs.
+
+
+SET DBID <database_id>;
+CONNECT TARGET <target_connect_string>;
+STARTUP NOMOUNT;
+RUN
+{
+  # uncomment the SET UNTIL command to restore database to the incremental
+  # backup taken three days ago.
+  # SET UNTIL TIME 'SYSDATE-3';
+  SET CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/backup/ora_cf%F';
+  RESTORE CONTROLFILE FROM AUTOBACKUP;
+  ALTER DATABASE MOUNT;
+  RESTORE DATABASE CHECK READONLY;
+  RECOVER DATABASE NOREDO;
+  ALTER DATABASE OPEN RESETLOGS;
+}
+
+#-end of file-

@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!-- ******************************************************* -->
+<!-- **** aqxml01.xml - AQXmlSend                       **** -->
+<!-- **** Enqueue 3 messages to ADT single consumer     **** -->
+<!-- **** queue With PiggyBack Commit                   **** -->
+<!-- ******************************************************* -->
+
+<Envelope xmlns= "http://schemas.xmlsoap.org/soap/envelope/">
+      <Body>
+        <AQXmlSend xmlns = "http://ns.oracle.com/AQ/schemas/access">
+          <producer_options>
+            <destination>aqxmladmn.book_q1</destination>
+          </producer_options>
+          
+          <message_set>
+            <message_count>3</message_count>	
+          
+            <message>
+              <message_number>1</message_number>
+          
+              <message_header>
+          	<correlation>PROGRAMMING</correlation>
+          	<delay>0</delay>
+          	<sender_id>
+          	   <agent_name>AGENT01</agent_name>
+          	   <protocol>0</protocol>
+          	</sender_id> 
+              </message_header>
+          
+              <message_payload>	
+                <BOOK_TYP>
+                  <TITLE>XML Unleashed</TITLE>
+                  <AUTHORS>Mike Johnson</AUTHORS>
+                  <ISBN>ISBN0101</ISBN>
+                  <PRICE>25</PRICE>
+               </BOOK_TYP>
+              </message_payload>
+            </message>
+ 
+            <message>
+              <message_number>2</message_number>
+          
+              <message_header>
+          	<correlation>CLASSICS</correlation>
+          	<delay>0</delay>
+          	<sender_id>
+          	   <agent_name>AGENT02</agent_name>
+          	   <protocol>0</protocol>
+          	</sender_id> 
+              </message_header>
+          
+              <message_payload>	
+                <BOOK_TYP>
+                  <TITLE>GREAT ADVENTURES</TITLE>
+                  <AUTHORS>Charles Dikens</AUTHORS>
+                  <ISBN>ISBN0202</ISBN>
+                  <PRICE>8</PRICE>
+               </BOOK_TYP>
+              </message_payload>
+            </message>
+            <message>
+              <message_number>3</message_number>
+          
+              <message_header>
+          	<correlation>CHILDREN</correlation>
+          	<delay>0</delay>
+          	<sender_id>
+          	   <agent_name>AGENT01</agent_name>
+          	   <protocol>0</protocol>
+          	</sender_id> 
+              </message_header>
+          
+              <message_payload>	
+                <BOOK_TYP>
+                  <TITLE>MARY HAD A LITTLE LAMB</TITLE>
+                  <AUTHORS>Tommy Close</AUTHORS>
+                  <ISBN>ISBN0303</ISBN>
+                  <PRICE>5</PRICE>
+               </BOOK_TYP>
+              </message_payload>
+            </message>
+          </message_set>
+        <AQXmlCommit>  
+        </AQXmlCommit>  
+        </AQXmlSend>  
+      </Body>
+</Envelope> 

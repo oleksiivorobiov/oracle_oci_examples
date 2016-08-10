@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- ******************************************** -->
+<!-- **** AQXmlReceive Multi  consumer queue **** -->
+<!-- **** JMS MAP Message                    **** -->
+<!-- ******************************************** -->
+
+<Envelope xmlns= "http://schemas.xmlsoap.org/soap/envelope/">
+      <Body>
+      
+        <AQXmlReceive xmlns = "http://ns.oracle.com/AQ/schemas/access">
+
+          <consumer_options>
+            <destination>aqxmladmn.jms_map_q1</destination>
+            <consumer_name>RECP1</consumer_name>
+          </consumer_options>
+	</AQXmlReceive>  
+      </Body>
+</Envelope> 

@@ -1,0 +1,11 @@
+<?xml version = '1.0'?>
+<!-- ******************************************************* -->
+<!-- **** AQXmlRollback                                 **** -->
+<!-- ******************************************************* -->
+
+<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+   <Body>
+      <AQXmlRollback xmlns="http://ns.oracle.com/AQ/schemas/access"/>
+   </Body>
+</Envelope>
+

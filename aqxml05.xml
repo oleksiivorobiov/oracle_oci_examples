@@ -1,0 +1,11 @@
+<?xml version = '1.0'?>
+<!-- ******************************************************* -->
+<!-- **** AQXmlCommit                                   **** -->
+<!-- ******************************************************* -->
+
+<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+   <Body>
+      <AQXmlCommit xmlns="http://ns.oracle.com/AQ/schemas/access"/>
+   </Body>
+</Envelope>
+

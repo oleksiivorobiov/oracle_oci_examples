@@ -1,0 +1,6 @@
+This is .dat file for clob demo. This .dat file content will be
+printed using lob stream interface . If these contents are
+printed properly, this demo program is working well.
+Otherwise there is a problem in printing. Hope this demo will
+work properly. 
+

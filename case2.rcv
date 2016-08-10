@@ -1,0 +1,480 @@
+#
+# $Header: case2.rcv 27-apr-2001.12:41:14 banand Exp $
+#
+# Copyright (c) 1995, 2001, Oracle Corporation.  All rights reserved.  */
+#
+#  NAME
+#    case2.rcv
+#
+#  DESCRIPTION
+#    This case study can be used as basis for developing your own backup, 
+#    maintenance, restore, and recovery scripts for a single instance database
+#    running in archivelog mode.
+#    
+#    The examples provided in this case study will use a disk area (/backup
+#    directory) to hold the most recent one week of backups, in order to
+#    expedite backup/restore operations.  The size of this area may vary
+#    depending on database size, redo generated, etc. If you want all backups
+#    to go to tape, remove DEVICE TYPE DISK option from the BACKUP commands
+#    given in this case study.
+
+#    Only the incremental backups are stored on disk for one week. The level 0
+#    backup goes immediately to tape. This means that RMAN will always have to 
+#    read tape for recovery.
+
+#
+#  NOTES
+#    You should not run all of the commands in this file in a single RMAN
+#    session.  Rather, the various sections in this file should be separated
+#    into individual RMAN scripts which can be run to configure, backup,
+#    restore, and recover the database.
+#
+#
+#  MODIFIED   (MM/DD/YY)
+#  banand      04/11/01 - re-write this case for archivelog mode database
+#  banand      04/11/01 - Creation
+#
+#  Organization:
+#
+#    This case study is divided into the following sections:
+#      1. Configuring RMAN parameters
+#      2. Backup
+#          - start script for backup cycle 
+#            (full database backup and archivelog backups)
+#          - script for other days of backup cycle
+#            (cumulative incremental level 1 backups and archivelog backups)
+#      3. Restore validation
+#          - verify that the database/tablespace is restorable
+#      4. Maintenance commands
+#      5. Restore and Recovery
+#          - Datafile recovery
+#          - Tablespace recovery
+#          - Controlfile recovery
+#          - Block recovery
+#          - Disaster recovery
+#          - Database Point-in-time recovery
+#
+#  How to run the file containing RMAN commands:
+#
+#    Here is an example of how to run the file that contains RMAN commands:
+#
+#    rman target internal/pwd@prod1 catalog rman/rman@rcat cmdfile command.rcv
+#
+#    See the Recovery Manager readme.doc and the Oracle8 Backup and
+#    Recovery Guide for more options on how to connect.
+#
+#
+
+# Section 1 - CONFIGURATION
+# ----------------------------------------------------------------------------
+
+# There are various parameters that can be used to configure RMAN operations
+# to suit your needs.  Some of the things that you can configure are:
+#    - the recovery window, to keep backups so that it is possible to recover 
+#      the database to any point in time during last X days.
+#    - the number of server processes that can do backups/restore operations 
+#      in parallel
+#    - default device type for backups
+#    - the directory where on-disk backups will be stored
+#
+# This case study assumes that you
+#    - have 1 tape drive
+#    - want parallelization for disk to two and for tape to one
+#    - want to be able to recover your database to any point in time during the
+#      last 30 days
+#    - want all full database backups to go only to tape
+#    - want to keep incrementals on disk for seven days
+#    - want to leave archivelogs on disk for seven days
+#    - want one copy of each archivelog backup saved on tape
+#    - want to back up archivelogs once per day
+#    - want to exclude tablespace tbl_exclude from database backups and
+#      restores because it is easier to re-create it than to restore and
+#      recover it.
+#
+# It should be noted that configuration setting is done just once, and these
+# settings are used by RMAN to perform all subsequent backup, restore,
+# recovery, and maintenance operations.
+
+# Configure backups to be written to tape, via a 3rd-party media managment
+# product.
+CONFIGURE DEFAULT DEVICE TYPE TO SBT;
+
+# If the media manager requires an RMAN PARMS string, configure it here.
+# The media manager documentation will specify whether this configuration is
+# needed.
+CONFIGURE CHANNEL DEVICE TYPE SBT PARMS '<media manager parameter string>';
+
+# Configure the number of server processes (channels) that write backups to
+# DISK.  You can delete these three lines if you want to only back up to tape.
+CONFIGURE DEVICE TYPE DISK PARALLELISM 2;
+CONFIGURE CHANNEL DEVICE TYPE DISK FORMAT '/backup/ora_df%t_s%s_s%p';
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/backup/%F';
+
+# Set the retention policy to a recovery window of 30 days.  This ensures that
+# RMAN retains all backups needed to recover the database to any point in time
+# in the last 30 days.  You can use the DELETE OBSOLETE command to delete
+# backups that are no longer required by the retention policy. To exclude a
+# backup from consideration by the policy, you can use KEEP option with the
+# BACKUP command.
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 30 DAYS;
+
+# Enable the autobackup feature to backup the controlfile after each database
+# or archivelog backup.
+CONFIGURE CONTROLFILE AUTOBACKUP ON;
+
+# Enable the backup optimization feature introduced in 9i to make sure that
+# RMAN won't backup an archivelog or datafile if there already exists a backup
+# of that file. The FORCE option can be used to override optimization on a
+# specific BACKUP command.
+CONFIGURE BACKUP OPTIMIZATION ON;
+
+# Exclude tbs_exclude from full database backups.  NOEXCLUDE can be specified
+# with backup command to override this configuration.
+CONFIGURE EXCLUDE FOR TABLESPACE tbl_exclude;
+
+# IMPORTANT: Save the database id displayed in the RMAN output if you are
+# operating RMAN backups in nocatalog mode, since it is required during
+# disaster recovery.  You will see the database id in output from RMAN on
+# connecting to target database like:
+#
+# connected to target database: INVENTORY (DBID=1670954628)
+
+# Use the SHOW ALL command to see the current configuration settings.
+
+# Section 2 - BACKUP
+#-----------------------------------------------------------------------------
+# Running database in archivelog mode provides following advantages
+#  - high availability, i.e., database is available during backups.
+#  - point in time recovery within recovery window for database/tablespace.
+
+# You can also follow the procedure given in case1.rcv for taking consistent
+# backups. Only disadvantage of taking consistent backups is that you have to 
+# close database cleanly, and open in restricted mode. Hence database is not
+# available for general use during consistent backup.
+#
+# Following scenario assumes that you want to take one full database once a 
+# week, doing every day incrementals. Backup cycle starts on friday, 
+# i.e., every friday full backup, and on other days incrementals.
+
+
+# Section 2.1 - Start script for backup cycle
+# -------------------------------------------
+# The following commands are run each Friday to start the backup cycle.
+# The steps are:
+#  - Take an incremental level 0 backup of the database.  A level 0 backup is
+#    a complete backup of the entire file which can be used as the basis
+#    for a subsequent incremental backup.
+#  - Backup all archivelogs that have not already been backed up.
+#  - Delete on-disk archivelogs older than seven days.
+
+BACKUP INCREMENTAL LEVEL 0 DATABASE FILESPERSET 4;
+BACKUP ARCHIVELOG ALL;
+DELETE ARCHIVELOG UNTIL TIME 'SYSDATE-7';
+
+# If the above backup fails for any reaon, you can use the NOT BACKED UP SINCE
+# option on the BACKUP command (9i restartable backup feature) to continue
+# from the point of failure.  The small value of FILESPERSET is good for
+# restartable backups.  However you should note that smaller FILESPERSET
+# produces more backup sets.
+
+# Use the following commands to re-start backups after a failure:
+BACKUP INCREMENTAL LEVEL 0 DATABASE FILESPERSET 4 
+   NOT BACKED UP SINCE TIME 'SYSDATE-1';
+BACKUP ARCHIVELOG ALL;
+DELETE ARCHIVELOG UNTIL TIME 'SYSDATE-7';
+
+# Section 2.2 - script for other days of backup cycle
+# -----------------------------------------------------
+# The following commands can be run from Saturday through Thursday to take
+# cumulative incremental backups.
+# The steps are:
+#  - delete incrementals on disk that were taken before 7 days.
+#  - take differential incremental backup of complete database.
+#  - copy incrementals to tape.
+#  - backup all archiveogs that are not backed up.
+#  - deletes any copies of archivelog on disk older than 7 days.
+
+DELETE BACKUP COMPLETED BEFORE 'SYSDATE-7' DEVICE TYPE DISK;
+BACKUP INCREMENTAL LEVEL 1 CUMULATIVE DEVICE TYPE DISK DATABASE FILESPERSET 4;
+BACKUP BACKUPSET ALL;                        # copies backups from disk to tape
+BACKUP ARCHIVELOG ALL;
+DELETE ARCHIVELOG UNTIL TIME 'SYSDATE-7';
+
+# CONCEPT NOTE ON CUMULATIVE INCREMENTAL BACKUPS: Cumulative incremental level
+# 1 backups will backup the blocks that changed since the last level 0 backup.
+# Incremental backups are similar in function to archived logs and RMAN uses
+# them in favor of archived logs during recovery.  If the CUMULATIVE option
+# was not specified, then only the blocks that have changed since the last
+# level 1 backup will be backed up.  The advantage of a cumulative backup is
+# that only one incremental backup ever needs to be applied during recovery.
+
+# As in section 2.1, you can use the NOT BACKED UP SINCE option with the
+# BACKUP command (9i re-startable backup feature) to continue from the point
+# of failure.
+
+# Use the following commands to re-start backups after a failure:
+DELETE BACKUP COMPLETED BEFORE 'SYSDATE-7' DEVICE TYPE DISK;
+BACKUP INCREMENTAL LEVEL 1 CUMULATIVE DEVICE TYPE DISK DATABASE FILESPERSET 4 
+   NOT BACKED UP SINCE TIME 'SYSDATE -1 ';
+BACKUP BACKUPSET ALL;                        # copies backups from disk to tape
+BACKUP ARCHIVELOG ALL;
+DELETE ARCHIVELOG UNTIL TIME 'SYSDATE-7';
+
+# Section 3 - RESTORE VALIDATION
+# ----------------------------------------------------------------------------
+# The following commands can be run any time to check if RMAN is capable of 
+# restoring the database/tablespace using existing backups.
+
+# check if database can be restored
+RESTORE DATABASE VALIDATE;
+
+# check if tablespace tst_tbs can be restored
+RESTORE TABLESPACE tst_tbs VALIDATE;
+
+# check if controlfile can be restored
+RESTORE CONTROLFILE VALIDATE;
+
+# check if archivelogs for the past two weeks can be restored
+RESTORE ARCHIVELOG FROM TIME 'SYSDATE-14' VALIDATE;
+                                                    
+
+# Section 4 - MAINTENANCE COMMANDS
+#-----------------------------------------------------------------------------
+# The following commands can be run any time for maintenance of backups.
+
+# Verify that all backups which RMAN thinks are stored by the third-party
+# media manager still exist, and generate a report of backups that need to be
+# taken to satisy the retention policy.
+CROSSCHECK BACKUP;
+REPORT NEED BACKUP;
+
+# Delete backups that are no longer needed to satisfy the retention policy.
+# Since we have set the retention policy to a recovery window of 30 days, any
+# datafile backups (generated without the KEEP option) not required to recover
+# within 30 days are deleted.  After deciding which datafile backups are no
+# longer needed, RMAN can then decide which archivelog backups are no longer
+# needed.  Archivelog backups are not needed if they are older than ANY
+# existing datafile backup.
+DELETE OBSOLETE;
+
+# get complete list of existing backups
+LIST BACKUP SUMMARY;
+
+
+# Section 5 - RESTORE AND RECOVERY
+#-----------------------------------------------------------------------------
+#
+# Section 5.1 - Datafile recovery
+#-----------------------------------------------------
+# 
+# This section assumes that datafile 5 has been damaged and needs to be
+# restored and recovered, and that the current controlfile and all other
+# datafiles are intact.  The database is open during the restore and recovery.
+#
+# The steps are:
+#  - offline the datafile that needs recovery
+#  - restore the datafile from backups
+#  - apply incrementals and archivelogs as necessary to recover.
+#  - make online recovered datafile
+
+RUN
+{
+  SQL 'ALTER DATABASE DATAFILE 5 OFFLINE';
+
+  # If you want to restore to a different location, uncomment the following
+  # command.
+  # SET NEWNAME FOR DATAFILE 5 TO '/newdirectory/new_filename.f';
+
+  RESTORE DATAFILE 5;
+
+  # If you restored to a different location, uncomment the command below to
+  # switch the controlfile to point to the file in the new location.
+  # SWITCH DATAFILE ALL;
+
+  RECOVER DATAFILE 5;
+  SQL 'ALTER DATABASE DATAFILE 5 ONLINE';
+}
+
+# Section 5.2 - Tablespace recovery
+#-------------------------------------------------------
+# 
+# This section assumes that tablespace tbs_5, containing datafiles 5, 6, and 7
+# has been damaged and needs to be restored and recovered, and that the
+# current controlfile and all other datafiles are intact.  The database is
+# open during the restore and recovery.
+#
+# The steps are:
+#  - Offline the tablespace that needs recovery.
+#  - Restore the tablespace from backups.
+#  - Apply incrementals and archivelogs as necessary to recover.
+#  - Online the recovered tablespace.
+
+RUN
+{
+  SQL 'ALTER TABLESPACE TBS_5 OFFLINE';
+
+  # If you want to restore to a different location, uncomment the following
+  # commands.
+  # SET NEWNAME FOR DATAFILE 5 TO '/newdirectory/new_filename_for_5.f';
+  # SET NEWNAME FOR DATAFILE 6 TO '/newdirectory/new_filename_for_6.f';
+  # SET NEWNAME FOR DATAFILE 7 TO '/newdirectory/new_filename_for_7.f';
+
+  RESTORE TABLESPACE TBS_5;
+
+  # If you restored to different locations, uncomment the commands below to
+  # switch the controlfile to point to the files in their new locations.
+  # SWITCH DATAFILE ALL;
+
+  RECOVER TABLESPACE TBS_5;
+  SQL 'ALTER TABLESPACE TBS_5 ONLINE';
+}
+
+# Section 5.3 - Controlfile recovery
+#-----------------------------------
+#
+
+# Oracle strongly recommends that you specify multiple controlfiles, on
+# separate physical disks and controllers, in the CONTROL_FILES initialization
+# parameter.
+# - If one copy is lost due to media failure, copy one of the others over the
+#   lost controlfile and restart the instance.
+# - If you lose all copies of the controlfile, you must re-create it using
+#   the CREATE CONTROLFILE sql command.
+#
+# You should use RMAN to recover a backup controlfile only if you have lost
+# all copies of the current controlfile, because after restoring a backup
+# controlfile, you will have to open RESETLOGS and take a new whole database
+# backup.
+#
+# This section assumes that all copies of the current controlfile have been
+# lost, and that all initialization parameter files, datafiles and online logs
+# are intact.
+#
+# Ensure you set your NLS_LANG environment variable.
+# e.g. in unix (csh):
+#       > setenv NLS_LANG american_america.we8dec
+#
+# Start RMAN without the TARGET option, and use the following commands to
+# restore and recover the database:
+
+SET DBID <database_id>;        # use database id from RMAN output as
+                               # explained in Section 2.1,
+                               # not required if using recovery catalog
+CONNECT TARGET <target_connect_string>;
+STARTUP NOMOUNT;
+RUN
+{
+  # You need to allocate channels if not using recovery catalog. Media
+  # manager parameter string must be same as in Section 1.
+  ALLOCATE CHANNEL FOO TYPE SBT PARMS '<media manager parameter string>';
+  ALLOCATE CHANNEL FOO2 TYPE DISK;
+
+  RESTORE CONTROLFILE FROM AUTOBACKUP;
+  ALTER DATABASE MOUNT;
+  RECOVER DATABASE;
+  ALTER DATABASE OPEN RESETLOGS;
+
+  # You must take a new whole database backup after resetlogs (as
+  # in Section 2.1), since backups of previous incarnation are not easily
+  # usable.
+}
+
+
+# Section 5.4 - Block recovery
+#-----------------------------
+# Block recovery can be used to recover a corrupted block(s). It is not
+# intended to recover complete datafile.
+# Usually, the corruption is reported in alert logs, trace files or
+# results of SQL commands
+#
+# For example, as a result of SQL command
+# SQL> select * from emp;
+#
+#NAME
+#------------------------------
+#ORA-01578: ORACLE data block corrupted (file # 7, block # 233)
+#ORA-01578: ORACLE data block corrupted (file # 7, block # 235)
+#ORA-01578: ORACLE data block corrupted (file # 4, block # 101)
+#ORA-01110: data file 7: '/oracle/dbs/tbs_07.f'
+#ORA-01110: data file 4: '/oracle/dbs/tbs_04.f'
+
+# Use the following BLOCKRECOVER command to recover the corrupted blocks
+# listed above:
+BLOCKRECOVER DATAFILE 7 BLOCK 233, 235 DATAFILE 4 BLOCK 101;
+
+# The BLOCKRECOVER command can also be used to repair all corrupted blocks
+# listed in V$BACKUP_CORRUPTION and V$COPY_CORRUPTION.  These views are
+# populated whenever an RMAN process peforms a complete scan of a file for the
+# purpose of backing it up, such as with the BACKUP or COPY command.  Use the
+# following command to repair all blocks listed in the V$xxx_CORRUPTION views:
+# command:
+BLOCKRECOVER CORRUPTION LIST;
+
+# Section 5.5 - Disaster recovery
+#--------------------------------
+# A disaster recovery scenario assumes that you have lost everything.  To
+# perform recovery in this case, you would have to restore initialization
+# parameters manually. Then use RMAN to restore and recover the database as
+# described in this section.
+#
+# The commands below assume that all initialization parameter files are in
+# place and the complete directory structure for datafiles is recreated.
+#
+# Ensure you set your NLS_LANG environment variable.
+# e.g. in unix (csh):
+#       > setenv NLS_LANG american_america.we8dec
+#
+# Start RMAN without the TARGET option, and use the following commands to
+# restore and recover the database:
+
+SET DBID <database_id>;        # use database id from RMAN output as
+                               # explained in Section 2.1,
+                               # not required if using recovery catalog
+CONNECT TARGET <target_connect_string>;
+STARTUP NOMOUNT;
+RUN
+{
+  # You need to allocate channels if not using recovery catalog. Media
+  # manager parameter string must be same as in Section 1.
+  ALLOCATE CHANNEL FOO TYPE SBT PARMS '<media manager parameter string>';
+  ALLOCATE CHANNEL FOO2 TYPE DISK;
+
+  # Optionally you can use SET NEWNAME and SWITCH commands as described in
+  # Section 5.2 to restore datafiles to a new location.
+  RESTORE CONTROLFILE FROM AUTOBACKUP;
+  ALTER DATABASE MOUNT;
+  RESTORE DATABASE;
+  RECOVER DATABASE;
+  ALTER DATABASE OPEN RESETLOGS;
+
+  # You must take a new whole database backup after resetlogs (as
+  # in Section 2.1), since backups of previous incarnation are not easily
+  # usable.
+}
+
+
+# Section 5.6 - Database Point-in-time recovery
+# ---------------------------------------------
+# This scenario assumes that all initialization files and the current
+# controlfile are in place and you want to recover to a point in time
+# '2001-04-09:14:30:00'.
+#
+# Ensure you set your NLS_LANG environment variable.
+# e.g. in unix (csh):
+#       > setenv NLS_LANG american_america.we8dec
+
+STARTUP MOUNT FORCE;
+RUN
+{
+  SET UNTIL TIME "TO_DATE('2001-04-09:14:30:00','yyyy-dd-mm:hh24:mi:ss')";
+  RESTORE DATABASE;
+  RECOVER DATABASE;
+  ALTER DATABASE OPEN RESETLOGS;
+
+  # You must take a new whole database backup after resetlogs (as
+  # in Section 2.1), since backups of previous incarnation are not easily
+  # usable.
+}
+
+
+#-end of file-

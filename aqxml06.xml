@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!-- ****************************************************** -->
+<!-- **** JMS Text Message - AQXmlSend                 **** -->
+<!-- **** Enqueue message to JMS TEXT single consumer queue -->
+<!-- **** Send /Enqueue Message with Commit            **** -->
+<!-- ****************************************************** -->
+
+<Envelope xmlns= "http://schemas.xmlsoap.org/soap/envelope/">
+      <Body>
+      
+        <AQXmlSend xmlns = "http://ns.oracle.com/AQ/schemas/access">
+
+          <producer_options>
+            <destination>aqxmladmn.jms_text_q1</destination>
+          </producer_options>
+          
+          <message_set>
+            <message_count>1</message_count>	
+          
+            <message>
+              <message_number>1</message_number>
+          
+              <message_header>
+          	<correlation>JMSTEXT</correlation>
+          	<delay>1</delay>
+          	<sender_id>
+          	   <agent_name>scott</agent_name>
+          	   <address>home</address>
+          	   <protocol>0</protocol>
+          	</sender_id>
+              </message_header>
+          
+              <message_payload>	
+          
+          	<jms_text_message>	
+          	  <oracle_jms_properties>
+          	    <reply_to>
+          	      <agent_name>oracle</agent_name>
+          	    </reply_to>
+          	    <userid>jmsuser</userid>
+          	    <appid>AQProduct</appid>
+          	    <groupid>AQ</groupid>
+          	  </oracle_jms_properties>
+          
+          	  <user_properties>
+          	    <property>
+          	      <name>Country</name>
+          	      <string_value>USA</string_value>
+          	    </property>
+          	    <property>
+          	      <name>State</name>
+          	      <string_value>california</string_value>
+          	    </property>
+          	    <property>
+          	      <name>Zip</name>
+          	      <int_value>94065</int_value>
+          	    </property>
+          	  </user_properties>
+
+          	  <text_data>
+                     All things bright and beautiful
+                     All creatures great and small
+                     All Things wise and Wonderful
+                     The Great Lord made them all.
+                  </text_data>	
+          
+               </jms_text_message>
+             </message_payload>
+            </message>
+          </message_set>
+          
+	<AQXmlCommit>  
+	</AQXmlCommit>  
+	</AQXmlSend>  
+      </Body>
+</Envelope> 
+

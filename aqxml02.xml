@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- ******************************************** -->
+<!-- **** AQXmlReceive Single consumer queue **** -->
+<!-- **** With Piggyback AQXmlCommit         **** -->
+<!-- ******************************************** -->
+
+<Envelope xmlns= "http://schemas.xmlsoap.org/soap/envelope/">
+      <Body>
+      
+        <AQXmlReceive xmlns = "http://ns.oracle.com/AQ/schemas/access">
+
+          <consumer_options>
+            <destination>aqxmladmn.BOOK_Q1</destination>
+            <wait_time>0</wait_time>
+            <batch_size>10</batch_size>
+          </consumer_options>
+          <AQXmlCommit>
+          </AQXmlCommit>
+	</AQXmlReceive>  
+      </Body>
+</Envelope> 

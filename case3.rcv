@@ -1,0 +1,261 @@
+#
+# $Header: case3.rcv 26-apr-2001.12:18:39 banand Exp $
+#
+# Copyright (c) 1995, 2001, Oracle Corporation.  All rights reserved.
+#
+#  NAME
+#    case3.rcv
+#
+#  DESCRIPTION
+#    This case study outlines the basic steps to perform tablespace
+#    point-in-time recovery (TSPITR) using Recovery Manager. 
+#
+#    The examples in this case study assume that all backups are stored on
+#    disk.  However if you have backups on tape and channels are configured as
+#    described in case2.rcv, Section 1, the same procedures will work.
+#
+#    This case study assumes that 
+#       - You want to recover tablespaces TBS1 and TBS2 to the point in time
+#         '2000-APR-01:07:05:30'.
+#       - TSPITR is performed on the same machine as the target database.
+#       - ORACLE_HOME is /oracle.
+#       - ORACLE_SID for the target database is PROD.
+#       - target database files and online logs are in $ORACLE_HOME/dbs/.
+#       - ORACLE_SID for the auxiliary instance is AUX.
+#       - all temporary files (except password file) for the auxiliary
+#         instance are created in $ORACLE_HOME/auxiliary.
+#
+#  NOTES
+#    You should not run all of the commands in this file in a single RMAN
+#    session.  Rather, the various sections in this file should be studied
+#    thoroughly before performing TSPITR.
+#
+#  MODIFIED   (MM/DD/YY)
+#  banand      04/17/01 - re-write case for tablespace point-in-time recovery
+#  banand      04/17/01 - Creation
+#
+#  Organization:
+#
+#     This case study is organized into the following sections:
+#      1. TSPITR usage and restrictions
+#      2. Resolving referential dependencies
+#      3. Preparing for TSPITR - setup auxiliary instance
+#      4. Performing TSPITR
+#      5. Preparing the target database to use recovered files
+#      6. Cleaning up the auxiliary instance and temporary files
+#
+
+Section 1 - TSPITR usage and restrictions
+-----------------------------------------
+
+Section 1.1 - When to do TSPITR
+-------------------------------
+   TSPITR can be performed:
+   - to recover from an erroneous drop or truncate table operation
+   - to recover a table that has become logically corrupted
+   - to recover from a batch job or DML that has affected only a subset of the
+     database
+
+Section 1.2 - Restrictions of TSPITR
+------------------------------------
+   It should be noted that TSPITR:
+   - cannot recover a dropped tablespace
+   - cannot recover a tablespace that was dropped and recreated with same name
+   - will not recover optimizer statistics; statistics must be recalculated
+     after TSPITR
+   - cannot recover a tablespace containing any of the following object types:
+      - replicated master tables
+      - tables with varray columns
+      - tables with nested tables
+      - tables with external bfiles
+      - snapshot logs
+      - snapshot tables
+      - IOTs
+      - objects owned by SYS (including rollback segments)
+
+   After TSPITR you should take a new backup of the recovered tablespace(s),
+   since it is not possible to recover using the pre-TSPITR backups.
+
+Section 1.3 - RMAN specific restrictions for TSPITR
+---------------------------------------------------
+   RMAN specific TSPITR restrictions are :
+      - cannot recover partitioned tables unless all partitions are contained
+        in the recovery set
+      - cannot recover tablespaces containing rollback segments
+
+Section 2. Resolving referential dependencies
+-----------------------------------------------------------------------------
+   The main issue to consider when deciding whether or not to proceed with 
+   TSPITR is the possibility of application-level inconsistencies between
+   tables in recovered and unrecovered tablespaces due to implicit rather than
+   explicit referential dependencies.  You should understand these dependencies
+   and have means to resolve any possible inconsistencies before proceeding.
+
+   Oracle provides the TS_PITR_CHECK view to assert that no referential
+   integrity constraints will be broken after TSPITR.  If this view returns
+   rows when queried then the reason should be investigated and resolved. Only
+   when TS_PITR_VIEW returns no rows TSPITR will be able to proceed (since
+   this view is checked by imp/exp utilities called by RMAN during
+   TSPITR). All actions taken at this stage should be noted in order that
+   these relationship can be rebuilt after TSPITR is complete.
+
+   You should check view TS_PITR_OBJECTS_TO_BE_DROPPED to see which objects
+   will be lost after TSPITR. If you want certain object listed by this view, 
+   then TSPITR should not be performed.
+
+   Run the following queries to prepare for performing TSPITR on TBS1 and TBS2
+   to time '2000-APR-01:07:05:30':
+
+    SELECT OWNER, NAME, TABLESPACE_NAME FROM SYS.TS_PITR_OBJECTS_TO_BE_DROPPED
+       WHERE TABLESPACE_NAME IN ('TBS1', 'TBS2') AND 
+             CREATION_TIME > TO_DATE('2000-APR-01:07:05:30', 
+                                     'YYYY-MON-DD:HH24:MI:SS')
+       ORDER BY TABLESPACE_NAME, CREATION_TIME;
+
+    SELECT * FROM SYS.TS_PITR_CHECK
+       WHERE (TS1_NAME IN ('TBS1', 'TBS2') AND
+              TS2_NAME NOT IN ('TBS1', 'TBS2')) OR
+             (TS1_NAME NOT IN ('TBS1', 'TBS2') AND
+              TS2_NAME IN ('TBS1', 'TBS2'));
+
+Section 3 - Preparing for TSPITR
+-----------------------------------------------------------------------------
+    This section shows how to set up the auxiliary instance which will be used
+    by RMAN to perform TSPITR on the desired tablespaces.  RMAN will connect
+    to this database using the AUXILIARY connect option.
+
+Section 3.1 - Setting up the auxiliary instance
+-----------------------------------------------
+
+Section 3.1.1 - Preparing to connect to the auxiliary instance
+--------------------------------------------------------------
+    The following steps should be followed to connect to the auxiliary
+    instance:
+
+     - create a password file for the auxiliary instance using the
+       orapwd utility:
+
+       orapwd file=/oracle/dbs/orapwAUX password=auxpwd entries=100
+
+     - Add listener.ora and tnsnames.ora entries so that RMAN can connect to
+       the auxiliary database.
+
+Section 3.1.2 - Preparing the parameter file for the auxiliary instance
+-----------------------------------------------------------------------
+     You can use the production instance parameter file as the basis for the
+     auxiliary instance.  However certain parameters like db_block_buffers,
+     shared_pool_size, large_pool_size, enqueue_resources, etc which allocate
+     shared memory can probably be reduced, because the auxiliary instance
+     does not have the same memory requirements as the production instance.
+
+     The following parameters must be set for the auxiliary instance:
+
+            # db_name must be the same as in the production instance
+            db_name=PROD
+
+            # control_files must be different than the production instance
+            control_files=/oracle/auxiliary/ctl.f
+
+            # lock_name_space must be different than the production instance
+            lock_name_space=_PROD
+
+            # db_file_name_convert and log_file_name_convert are used only in
+            # the parameter file of the auxiliary instance.  They establish
+            # the rules that are used to convert the datafile and log file
+            # names from the production to the auxiliary database.  Note that
+            # starting in Oracle9i, more than one pair of substitutions can
+            # be specified in both of these parameters, which allows more
+            # flexibility in converting file names.  Use the RMAN SET NEWNAME
+            # command to convert any file names that cannot be converted with
+            # the xxx_file_name_convert parameters.
+            db_file_name_convert=('/dbs/', '/auxiliary/')
+            log_file_name_convert=('/dbs/', '/auxiliary/')
+
+            # log_archive_dest_n and log_archive_format can be the same as the
+            # target instance
+            log_archive_dest_1='LOCATION=/oracle/log'
+            log_archive_format=r_%t_%s.arc
+
+     It is important to note that ALL controlfiles, online logs, and datafiles
+     must have different names at the auxiliary instance than they have at the
+     production instance, otherwise RMAN may restore files to those locations,
+     and overwrite the production files.  Use the control_files,
+     db_file_name_convert, and log_file_name_convert parameters to make sure
+     that the files at the auxiliary instance all have different names.
+
+Section 3.1.3 - Starting the auxiliary instance
+-----------------------------------------------
+     You should start the auxiliary instance in nomount mode before performing
+     TSPITR.  You can connect using SQLPLUS and start the auxiliary using the
+     following commands :
+
+     CONNECT sys/syspwd@auxiliary_db_connect_string as sysdba;
+     STARTUP PFILE=/oracle/auxiliary/initAUX.ora NOMOUNT;
+
+Section 4 - Performing TSPITR using RMAN
+------------------------------------------------------------------------------
+   The auxiliary database must be in nomount state and the target instance
+   must be mounted or open state to perform TSPITR.  The steps in RMAN TSPITR
+   are:
+     - connect to auxiliary instance
+     - connect to target database
+     - connect to recovery catalog (optional)
+     - recover tablespace TBS1 and TBS2
+
+   CONNECT AUXILIARY <sys@auxiliary_db_connect_string>
+   CONNECT TARGET    <sys@target_db_connect_string>
+   CONNECT CATALOG   <catalog_db_user_connect_string>
+
+   RUN
+   {
+     # optionally, use SET NEWNAME here for file name translation
+     # SET NEWNAME FOR DATAFILE 1 TO '/oracle/auxiliary/file1.f'
+     # SET NEWNAME FOR DATAFILE 2 TO '/oracle/auxiliary/file2.f'
+
+     RECOVER TABLESPACE TBS1, TBS2 UNTIL TIME 
+           "TO_DATE('2000-APR-01:07:05:30', 'YYYY-MON-DD:HH24:MI:SS')";
+   }
+
+   All the recovered tablespaces will be OFFLINE in target database on
+   successful execution of RECOVER command.  If the RECOVER command fails,
+   then after resolving the error you can re-execute the commands.
+
+   If export fails due to lack of temporary space, you can create a temporary
+   tablespace.  Search for tspitr_7 in /oracle/rdbms/admin/recover.bsq and
+   see comments to create temporary tablespace.
+
+   If import fails because of import tables not existing, you can run
+   CATEXP.SQL on target database to create import schema.
+
+Section 5 - Preparing the target database to use the recovered tablespaces
+--------------------------------------------------------------------------
+
+   After the RECOVER command in Section 4 runs successfully, you should backup
+   the recovered tablespaces, because after they are brought online, they can
+   no longer be recovered using backups taken prior to the TSPITR.
+
+   CONNECT TARGET sys/syspwd@target_db_connect_string;
+   BACKUP TABLESPACE TBS1, TBS2;
+   SQL 'ALTER TABLESPACE TBS1, TBS2 ONLINE';
+
+Section 6 - Cleanup auxiliary instance
+--------------------------------------
+  The auxiliary instance is not usable after successful completion of
+  TSPITR.  This instance must be cleaned using following steps:
+
+   - Connect to the auxiliary instance as explained in Section 3.1.3
+   - mount the database using 'ALTER DATABASE MOUNT CLONE DATABASE'
+   - Delete the temporary files restored by RMAN when performing TSPITR.
+     You can use following queries to list them:
+
+      SELECT d.name FROM v$datafile d, v$tablespace t 
+       WHERE d.ts#=t.ts# AND status in ('SYSTEM', 'ONLINE') AND
+            t.name not in ('TBS1', 'TBS2');
+      SELECT member FROM v$logfile;
+      SELECT name FROM v$controlfile;
+
+   - Shutdown the auxiliary instance and delete the above files.
+     All these files in this case should be in the /oracle/auxiliary directory.
+   - You can also delete initAUX.ora and orapwAUX
+
+#-end of file-
